@@ -1,95 +1,338 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block class %}class="sub_page"{% endblock class %}
-{% block table_status %}active{% endblock table_status %}
-{% block main %}
+{% block title %}Book Table - FoodLoops{% endblock %}
 
-<!-- book section -->
-<section class="book_section layout_padding">
-  <div class="container">
-    <div class="heading_container">
-      <h2>
-        Book A Table
-      </h2>
-    </div>
-    <div class="row">
-      <div class="col-md-6">
-        <div class="form_container">
-          <!-- Display messages here -->
-          {% if messages %}
-          <div class="alert alert-info">
-            {% for message in messages %}
-              <p>{{ message }}</p>
-            {% endfor %}
-          </div>
-          {% endif %}
-
-          <form action="{% url 'Book_Table' %}" method='POST'>{% csrf_token %}
-            <div>
-              <input type="text" class="form-control" name="user_name" required placeholder="Your Name" />
+{% block content %}
+<!-- Book Table Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-lg-8 mx-auto">
+                <div class="hero-content animate-fadeInUp">
+                    <h1 class="display-4 fw-bold mb-4">Book Your Table</h1>
+                    <p class="lead mb-4">
+                        Reserve your spot at FoodLoops and enjoy an unforgettable dining experience with your loved
+                        ones.
+                    </p>
+                </div>
             </div>
-            <div>
-              <input type="text" class="form-control" name="phone_number" required placeholder="Phone Number" />
-            </div>
-            <div>
-              <input type="email" class="form-control" name="user_email" placeholder="Your Email" />
-            </div>
-            <div>
-              <select class="form-control nice-select wide" required name="total_person">
-                <option value="" disabled selected>
-                  How many persons?
-                </option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-              </select>
-            </div>
-            <div>
-              <input type="date" required name="booking_data" class="form-control">
-            </div>
-            <div class="btn_box">
-              <button>
-                Book Now
-              </button>
-            </div>
-          </form>
         </div>
-      </div>
-      
-      <!-- Google Map section -->
-      <div class="col-md-6">
-        <div class="map_container">
-          <div id="googleMap" style="height: 400px; width: 100%;"></div> <!-- Ensure the map has a height and width -->
-        </div>
-      </div>
     </div>
-  </div>
 </section>
-<!-- end book section -->
 
-<!-- Add the Google Maps API -->
-<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap" async defer></script>
+<!-- Booking Form Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-primary text-white text-center">
+                        <h3 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Table Reservation</h3>
+                    </div>
+                    <div class="card-body p-5">
+                        <form method="POST" id="bookingForm">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <label for="user_name" class="form-label">
+                                        <i class="fas fa-user me-2"></i>Full Name *
+                                    </label>
+                                    <input type="text" class="form-control" name="user_name" id="user_name" required>
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <label for="user_email" class="form-label">
+                                        <i class="fas fa-envelope me-2"></i>Email Address *
+                                    </label>
+                                    <input type="email" class="form-control" name="user_email" id="user_email" required>
+                                </div>
+                            </div>
 
-<!-- Initialize Google Map -->
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <label for="phone_number" class="form-label">
+                                        <i class="fas fa-phone me-2"></i>Phone Number *
+                                    </label>
+                                    <input type="tel" class="form-control" name="phone_number" id="phone_number"
+                                        pattern="[0-9]{10}" title="Please enter a valid 10-digit phone number" required>
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <label for="total_person" class="form-label">
+                                        <i class="fas fa-users me-2"></i>Number of Guests *
+                                    </label>
+                                    <select class="form-select" name="total_person" id="total_person" required>
+                                        <option value="">Select number of guests</option>
+                                        <option value="1">1 Person</option>
+                                        <option value="2">2 People</option>
+                                        <option value="3">3 People</option>
+                                        <option value="4">4 People</option>
+                                        <option value="5">5 People</option>
+                                        <option value="6">6 People</option>
+                                        <option value="7">7 People</option>
+                                        <option value="8">8 People</option>
+                                        <option value="9">9 People</option>
+                                        <option value="10">10+ People</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <label for="booking_data" class="form-label">
+                                        <i class="fas fa-calendar me-2"></i>Booking Date *
+                                    </label>
+                                    <input type="date" class="form-control" name="booking_data" id="booking_data"
+                                        required>
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <label for="booking_time" class="form-label">
+                                        <i class="fas fa-clock me-2"></i>Preferred Time
+                                    </label>
+                                    <select class="form-select" name="booking_time" id="booking_time">
+                                        <option value="">Select time</option>
+                                        <option value="11:00">11:00 AM</option>
+                                        <option value="11:30">11:30 AM</option>
+                                        <option value="12:00">12:00 PM</option>
+                                        <option value="12:30">12:30 PM</option>
+                                        <option value="13:00">1:00 PM</option>
+                                        <option value="13:30">1:30 PM</option>
+                                        <option value="14:00">2:00 PM</option>
+                                        <option value="14:30">2:30 PM</option>
+                                        <option value="18:00">6:00 PM</option>
+                                        <option value="18:30">6:30 PM</option>
+                                        <option value="19:00">7:00 PM</option>
+                                        <option value="19:30">7:30 PM</option>
+                                        <option value="20:00">8:00 PM</option>
+                                        <option value="20:30">8:30 PM</option>
+                                        <option value="21:00">9:00 PM</option>
+                                        <option value="21:30">9:30 PM</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="special_requests" class="form-label">
+                                    <i class="fas fa-comment me-2"></i>Special Requests
+                                </label>
+                                <textarea class="form-control" name="special_requests" id="special_requests" rows="3"
+                                    placeholder="Any special dietary requirements, celebration details, or other requests..."></textarea>
+                            </div>
+
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-calendar-check me-2"></i>Book Table
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Restaurant Info Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100 border-0">
+                    <div class="card-body p-4">
+                        <h4 class="card-title mb-4">
+                            <i class="fas fa-info-circle text-primary me-2"></i>Booking Information
+                        </h4>
+                        <ul class="list-unstyled">
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Confirmation:</strong> You'll receive a confirmation email within 15 minutes
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-clock text-primary me-2"></i>
+                                <strong>Advance Booking:</strong> Please book at least 2 hours in advance
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-users text-primary me-2"></i>
+                                <strong>Large Groups:</strong> For parties of 10+ people, please call us directly
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-ban text-danger me-2"></i>
+                                <strong>Cancellation:</strong> Free cancellation up to 2 hours before booking time
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100 border-0">
+                    <div class="card-body p-4">
+                        <h4 class="card-title mb-4">
+                            <i class="fas fa-map-marker-alt text-primary me-2"></i>Find Us
+                        </h4>
+                        <div class="contact-info">
+                            <p class="mb-3">
+                                <i class="fas fa-map-pin text-primary me-2"></i>
+                                <strong>Address:</strong> 123 Food Street, Bhubaneswar, Odisha 751001
+                            </p>
+                            <p class="mb-3">
+                                <i class="fas fa-phone text-primary me-2"></i>
+                                <strong>Phone:</strong> +91 98765 43210
+                            </p>
+                            <p class="mb-3">
+                                <i class="fas fa-envelope text-primary me-2"></i>
+                                <strong>Email:</strong> reservations@foodloops.com
+                            </p>
+                        </div>
+
+                        <div class="opening-hours mt-4">
+                            <h6 class="text-primary mb-2">Opening Hours:</h6>
+                            <p class="mb-1">Monday - Friday: 11:00 AM - 10:00 PM</p>
+                            <p class="mb-1">Saturday: 11:00 AM - 11:00 PM</p>
+                            <p class="mb-1">Sunday: 11:00 AM - 9:00 PM</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Map Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h3 class="text-center mb-4">Our Location</h3>
+                <div class="map-container">
+                    <div id="map" style="height: 400px; border-radius: 10px; overflow: hidden;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-control,
+    .form-select {
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 8px;
+    }
+
+    .contact-info p {
+        transition: color 0.3s ease;
+    }
+
+    .contact-info p:hover {
+        color: var(--primary-color);
+    }
+
+    .map-container {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
 <script>
-function initMap() {
-  // Set the location of your restaurant (replace with your actual coordinates)
-  var restaurantLocation = { lat: 26.8467, lng: 80.9462 }; // Example coordinates (change these)
+    $(document).ready(function () {
+        // Set minimum date to today
+        var today = new Date().toISOString().split('T')[0];
+        $('#booking_data').attr('min', today);
 
-  // Create the map centered on the restaurant
-  var map = new google.maps.Map(document.getElementById('googleMap'), {
-    zoom: 14,  // Set zoom level
-    center: restaurantLocation  // Set map's center
-  });
+        // Form validation
+        $('#bookingForm').on('submit', function (e) {
+            var phoneNumber = $('#phone_number').val();
+            var totalPerson = $('#total_person').val();
+            var bookingDate = $('#booking_data').val();
+            var userName = $('#user_name').val().trim();
+            var userEmail = $('#user_email').val().trim();
 
-  // Add a marker at the restaurant's location
-  var marker = new google.maps.Marker({
-    position: restaurantLocation,
-    map: map,
-    title: 'Your Restaurant Name'  // Change this to your restaurant's name
-  });
-}
+            // Validate phone number
+            if (phoneNumber.length !== 10 || !/^\d+$/.test(phoneNumber)) {
+                e.preventDefault();
+                alert('Please enter a valid 10-digit phone number');
+                return;
+            }
+
+            // Validate other required fields
+            if (!userName || !userEmail || !totalPerson || totalPerson === '0' || !bookingDate) {
+                e.preventDefault();
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            // Show loading state
+            $(this).find('button[type="submit"]').html('<i class="fas fa-spinner fa-spin me-2"></i>Processing...');
+        });
+
+        // Phone number formatting
+        $('#phone_number').on('input', function () {
+            var value = $(this).val().replace(/\D/g, '');
+            $(this).val(value);
+        });
+    });
+
+    // Initialize Google Maps
+    function initMap() {
+        var foodLoopsLocation = { lat: 20.2961, lng: 85.8245 }; // Bhubaneswar coordinates
+
+        var map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 15,
+            center: foodLoopsLocation,
+            styles: [
+                {
+                    featureType: 'poi',
+                    elementType: 'labels',
+                    stylers: [{ visibility: 'off' }]
+                }
+            ]
+        });
+
+        var marker = new google.maps.Marker({
+            position: foodLoopsLocation,
+            map: map,
+            title: 'FoodLoops Restaurant',
+            icon: {
+                url: 'https://maps.google.com/mapfiles/ms/icons/restaurant.png'
+            }
+        });
+
+        var infoWindow = new google.maps.InfoWindow({
+            content: '<div style="padding: 10px;"><h6>FoodLoops Restaurant</h6><p>123 Food Street, Bhubaneswar, Odisha</p><p>Phone: +91 98765 43210</p></div>'
+        });
+
+        marker.addListener('click', function () {
+            infoWindow.open(map, marker);
+        });
+    }
+
+    // Load Google Maps
+    function loadGoogleMaps() {
+        var script = document.createElement('script');
+        script.src = 'https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key|default:"AIzaSyCh39n5U-4IoWpsVGUHWdqB6puEkhRLdmI" }}&callback=initMap';
+        document.head.appendChild(script);
+    }
+
+    // Initialize map when page loads
+    $(document).ready(function () {
+        loadGoogleMaps();
+    });
 </script>
-
-{% endblock main %}
+{% endblock %}

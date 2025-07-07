@@ -23,6 +23,7 @@ from django.conf.urls.static import static
 from Base_App.views import *
 
 urlpatterns = [
+    path('login/', login_view, name='login'),
     path('admin/', admin.site.urls),
     path('', HomeView, name='Home'),
     path('about/', AboutView, name='About'),
@@ -31,6 +32,7 @@ urlpatterns = [
     path('feedback/', FeedbackView, name='Feedback_Form'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('get-cart-items/', get_cart_items, name='get_cart_items'),
+    path('add-to-cart/', add_to_cart, name='add_to_cart'),
 
 ]
 if settings.DEBUG:

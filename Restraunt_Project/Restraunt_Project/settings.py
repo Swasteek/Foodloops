@@ -126,6 +126,8 @@ MEDIA_URL = 'media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'Media')
 
 
+# Add this with your real key
+GOOGLE_MAPS_API_KEY = 'AIzaSyCh39n5U-4IoWpsVGUHWdqB6puEkhRLdmI'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -134,3 +136,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Authentication settings
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+# STATIC_URL = '/static/'
+# STATICFILES_DIRS = [BASE_DIR / "Restraunt_Project" / "Static"]

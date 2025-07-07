@@ -1,65 +1,281 @@
-{% extends "base.html" %}
-{% load static %}
-{% block class %}class="sub_page"{% endblock class %}
-{% block feedback_status %}active{% endblock feedback_status %}
-{% block main %}
+{% extends 'base.html' %}
 
-<!-- start feedback form -->
-<section class="book_section layout_padding">
-  <div class="container">
-    <div class="heading_container">
-      <h2>
-        Feedback Form
-      </h2>
-    </div>
-    <div class="row">
-      <div class="col-md-6">
-        <div class="form_container">
-          <!-- Display messages here -->
-          {% if messages %}
-          <div class="alert alert-info">
-            {% for message in messages %}
-            <p>{{ message }}</p>
-            {% endfor %}
-          </div>
-          {% endif %}
+{% block title %}Feedback - FoodLoops{% endblock %}
 
-          <form action="{% url 'Feedback_Form' %}" method="POST" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div>
-              <input type="text" class="form-control" name="User_name" required placeholder="Your Name" />
+{% block content %}
+<!-- Feedback Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-lg-8 mx-auto">
+                <div class="hero-content animate-fadeInUp">
+                    <h1 class="display-4 fw-bold mb-4">Your Feedback Matters</h1>
+                    <p class="lead mb-4">
+                        Help us improve by sharing your experience. Your feedback helps us serve you better.
+                    </p>
+                </div>
             </div>
-            <div class="mb-3">
-              <textarea class="form-control" id="exampleFormControlTextarea1" name="Description" rows="3" required
-                placeholder="Describe your experience here"></textarea>
-            </div>
-            <div>
-              <select class="form-control nice-select wide" required name="Rating">
-                <option value="" disabled selected>
-                  Please Give Us Rating?
-                </option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-              </select>
-            </div>
-            <div>
-              <label for="formFileLg" class="form-label">Upload Image:</label>
-              <input class="form-control form-control-lg" name="Selfie" id="formFileLg" type="file">
-            </div>
-            <div class="btn_box">
-              <button type="submit">
-                Submit
-              </button>
-            </div>
-          </form>
         </div>
-      </div>
     </div>
-  </div>
 </section>
-<!-- end feedback form -->
 
-{% endblock main %}
+<!-- Success Message -->
+{% if success %}
+<section class="py-4">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>Thank you!</strong> {{ success }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Feedback Form Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-primary text-white text-center">
+                        <h3 class="mb-0"><i class="fas fa-star me-2"></i>Share Your Experience</h3>
+                    </div>
+                    <div class="card-body p-5">
+                        <form method="POST" enctype="multipart/form-data" id="feedbackForm">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <label for="User_name" class="form-label">
+                                        <i class="fas fa-user me-2"></i>Your Name *
+                                    </label>
+                                    <input type="text" class="form-control" id="User_name" name="User_name"
+                                        placeholder="Enter your full name" required>
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <label for="email" class="form-label">
+                                        <i class="fas fa-envelope me-2"></i>Email Address *
+                                    </label>
+                                    <input type="email" class="form-control" id="email" name="email"
+                                        placeholder="your.email@example.com" required>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <label for="phone" class="form-label">
+                                        <i class="fas fa-phone me-2"></i>Phone Number
+                                    </label>
+                                    <input type="tel" class="form-control" id="phone" name="phone"
+                                        placeholder="+91 12345 67890">
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <label for="rating" class="form-label">
+                                        <i class="fas fa-star me-2"></i>Overall Rating *
+                                    </label>
+                                    <select class="form-select" id="rating" name="rating" required>
+                                        <option value="">Select Rating</option>
+                                        <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+                                        <option value="4">⭐⭐⭐⭐☆ Very Good</option>
+                                        <option value="3">⭐⭐⭐☆☆ Good</option>
+                                        <option value="2">⭐⭐☆☆☆ Fair</option>
+                                        <option value="1">⭐☆☆☆☆ Poor</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="category" class="form-label">
+                                    <i class="fas fa-tag me-2"></i>Feedback Category *
+                                </label>
+                                <select class="form-select" id="category" name="category" required>
+                                    <option value="">Select Category</option>
+                                    <option value="food_quality">Food Quality</option>
+                                    <option value="service">Service</option>
+                                    <option value="delivery">Delivery</option>
+                                    <option value="website">Website Experience</option>
+                                    <option value="payment">Payment Process</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="subject" class="form-label">
+                                    <i class="fas fa-bookmark me-2"></i>Subject *
+                                </label>
+                                <input type="text" class="form-control" id="subject" name="subject"
+                                    placeholder="Brief subject line" required>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="message" class="form-label">
+                                    <i class="fas fa-comment me-2"></i>Your Feedback *
+                                </label>
+                                <textarea class="form-control" id="message" name="message" rows="6"
+                                    placeholder="Please share your detailed feedback..." required></textarea>
+                                <div class="form-text">
+                                    Minimum 10 characters required
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="image" class="form-label">
+                                    <i class="fas fa-image me-2"></i>Attach Image (Optional)
+                                </label>
+                                <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                                <div class="form-text">
+                                    Upload an image if relevant to your feedback (Max 5MB)
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="newsletter" name="newsletter">
+                                    <label class="form-check-label" for="newsletter">
+                                        Subscribe to our newsletter for updates and special offers
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
+                                    <label class="form-check-label" for="terms">
+                                        I agree to the <a href="#" class="text-primary">Terms of Service</a> and
+                                        <a href="#" class="text-primary">Privacy Policy</a> *
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-paper-plane me-2"></i>Submit Feedback
+                                </button>
+                                <button type="reset" class="btn btn-outline-secondary">
+                                    <i class="fas fa-undo me-2"></i>Reset Form
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Feedback Stats Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-lg-12 mb-4">
+                <h2 class="fw-bold">What Our Customers Say</h2>
+                <p class="text-muted">Your feedback helps us maintain our quality standards</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card border-0 h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-star text-warning fa-2x mb-3"></i>
+                        <h3 class="fw-bold text-primary">4.8/5</h3>
+                        <p class="text-muted">Average Rating</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card border-0 h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-users text-success fa-2x mb-3"></i>
+                        <h3 class="fw-bold text-primary">15,000+</h3>
+                        <p class="text-muted">Happy Customers</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card border-0 h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-comments text-info fa-2x mb-3"></i>
+                        <h3 class="fw-bold text-primary">8,500+</h3>
+                        <p class="text-muted">Feedback Received</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card border-0 h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-clock text-warning fa-2x mb-3"></i>
+                        <h3 class="fw-bold text-primary">24 Hours</h3>
+                        <p class="text-muted">Response Time</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Contact Information -->
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center">
+                <h3 class="fw-bold mb-4">Other Ways to Reach Us</h3>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <i class="fas fa-phone text-primary me-3"></i>
+                            <div>
+                                <h6 class="mb-1">Phone</h6>
+                                <p class="text-muted mb-0">+91 12345 67890</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <i class="fas fa-envelope text-primary me-3"></i>
+                            <div>
+                                <h6 class="mb-1">Email</h6>
+                                <p class="text-muted mb-0">feedback@foodloops.com</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <i class="fas fa-map-marker-alt text-primary me-3"></i>
+                            <div>
+                                <h6 class="mb-1">Address</h6>
+                                <p class="text-muted mb-0">Bhubaneswar, Odisha</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    document.getElementById('feedbackForm').addEventListener('submit', function (e) {
+        const message = document.getElementById('message').value;
+        if (message.length < 10) {
+            e.preventDefault();
+            alert('Please provide at least 10 characters in your feedback message.');
+            return false;
+        }
+
+        const fileInput = document.getElementById('image');
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            if (file.size > 5 * 1024 * 1024) { // 5MB
+                e.preventDefault();
+                alert('File size must be less than 5MB');
+                return false;
+            }
+        }
+    });
+</script>
+
+{% endblock %}

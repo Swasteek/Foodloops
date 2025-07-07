@@ -1,97 +1,442 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block class %}class="sub_page"{% endblock class %}
-{% block menu_status %}active{% endblock menu_status %}
-{% load static %}
+{% block title %}Menu - FoodLoops{% endblock %}
 
-{% block main %}
-
-  <!-- food section -->
-
-  <section class="food_section layout_padding-bottom">
+{% block content %}
+<!-- Menu Hero Section -->
+<section class="hero-section">
     <div class="container">
-      <div class="heading_container heading_center">
-        <h2>
-          Our Menu
-        </h2>
-      </div>
-
-      <ul class="filters_menu">
-        <li class="active" data-filter="*">All</li>
-        {% for i in list %}
-        <li data-filter=".{{i.Category_name}}">{{i.Category_name}}</li>
-        {% endfor %}
-      </ul>
-
-      <div class="filters-content">
-        <div class="row grid">
-          {% for j in items %}
-          <div class="col-sm-6 col-lg-4 all {{j.Category}}">
-            <div class="box">
-              <div>
-                <div class="img-box">
-                  <img src="/media/{{j.Image}} " alt="{{j.Image}}">
+        <div class="row text-center">
+            <div class="col-lg-8 mx-auto">
+                <div class="hero-content animate-fadeInUp">
+                    <h1 class="display-4 fw-bold mb-4">Our Menu</h1>
+                    <p class="lead mb-4">
+                        Discover our carefully curated selection of delicious dishes, prepared with the finest
+                        ingredients and crafted with love.
+                    </p>
                 </div>
-                <div class="detail-box">
-                  <h5>
-                    {{j.Item_name}}
-                  </h5>
-                  <p>
-                    {{j.description}}
-                  </p>
-                  <div class="options">
-                    <h6>
-                      ${{j.Price}}
-                    </h6>
-                    <button class="btn btn-success add-to-cart" data-item-id="{{j.id}}" data-item-name="{{j.Item_name}}" data-item-price="{{j.Price}}">
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
-          </div>
-          {% endfor %}
         </div>
-      </div>
-      <div class="btn-box">
-        <a href="">
-          View More
-        </a>
-      </div>
     </div>
-  </section>
+</section>
 
-  <!-- end food section -->
+<!-- Filter Section -->
+<section class="py-4 bg-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-center flex-wrap">
+                    <button class="btn btn-outline-primary me-2 mb-2 filter-btn active" data-filter="all">
+                        <i class="fas fa-utensils me-1"></i>All Items
+                    </button>
+                    {% for category in list %}
+                    <button class="btn btn-outline-primary me-2 mb-2 filter-btn"
+                        data-filter="{{ category.Category_name|lower }}">
+                        <i class="fas fa-tag me-1"></i>{{ category.Category_name }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
-  <script>
-    document.querySelectorAll('.add-to-cart').forEach(button => {
-      button.addEventListener('click', function() {
-        const itemId = this.getAttribute('data-item-id');
-        const itemName = this.getAttribute('data-item-name');
-        const itemPrice = this.getAttribute('data-item-price');
-  
-        fetch('/add-to-cart/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRFTOKEN': '{{ csrf_token }}'
-          },
-          body: `item_id=${itemId}`
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.message) {
-            alert(data.message);
-          } else {
-            alert('Failed to add item to cart.');
-          }
-        })
-        .catch(error => console.error('Error:', error));
-      });
+<!-- Search Section -->
+<section class="py-4">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6 mx-auto">
+                <div class="input-group">
+                    <input type="text" class="form-control form-control-lg" placeholder="Search for dishes..."
+                        id="searchInput">
+                    <button class="btn btn-primary" type="button" id="searchBtn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Menu Items Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row" id="menuItems">
+            {% for item in menu_items %}
+            <div class="col-lg-4 col-md-6 mb-4 menu-item" data-category="{{ item.Category.Category_name|lower }}">
+                <div class="card h-100 shadow-sm menu-card">
+                    <div class="position-relative">
+                        {% if item.Image %}
+                        <img src="{{ item.Image.url }}" class="card-img-top" alt="{{ item.Item_name }}"
+                            style="height: 250px; object-fit: cover;">
+                        {% else %}
+                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
+                            style="height: 250px;">
+                            <i class="fas fa-utensils text-muted fa-3x"></i>
+                        </div>
+                        {% endif %}
+
+                        <!-- Price Badge -->
+                        <div class="position-absolute top-0 end-0 m-2">
+                            <span class="badge bg-success fs-6">₹{{ item.Price }}</span>
+                        </div>
+
+                        <!-- Category Badge -->
+                        <div class="position-absolute top-0 start-0 m-2">
+                            <span class="badge bg-primary">{{ item.Category.Category_name }}</span>
+                        </div>
+                    </div>
+
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title fw-bold">{{ item.Item_name }}</h5>
+                        <p class="card-text text-muted flex-grow-1">
+                            {% if item.Description %}
+                            {{ item.Description|truncatewords:15 }}
+                            {% else %}
+                            Delicious {{ item.Item_name }} prepared with fresh ingredients.
+                            {% endif %}
+                        </p>
+
+                        <!-- Rating -->
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="text-warning me-2">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star-half-alt"></i>
+                                </div>
+                                <small class="text-muted">(4.5)</small>
+                            </div>
+                        </div>
+
+                        <!-- Quantity and Add to Cart -->
+                        <div class="d-flex justify-content-between align-items-center mt-auto">
+                            <div class="quantity-control">
+                                <button class="btn btn-outline-secondary btn-sm quantity-btn" data-action="decrease"
+                                    data-item-id="{{ item.id }}">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <span class="mx-2 quantity-display" id="quantity-{{ item.id }}">1</span>
+                                <button class="btn btn-outline-secondary btn-sm quantity-btn" data-action="increase"
+                                    data-item-id="{{ item.id }}">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <button class="btn btn-primary add-to-cart-btn" data-item-id="{{ item.id }}">
+                                <i class="fas fa-cart-plus me-1"></i>Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <i class="fas fa-utensils text-muted fa-5x mb-4"></i>
+                <h3 class="text-muted">No Menu Items Available</h3>
+                <p class="text-muted">We're working on adding delicious items to our menu. Please check back soon!</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- No Results Message -->
+        <div class="row d-none" id="noResults">
+            <div class="col-12 text-center py-5">
+                <i class="fas fa-search text-muted fa-5x mb-4"></i>
+                <h3 class="text-muted">No Items Found</h3>
+                <p class="text-muted">Try adjusting your search or filter criteria.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Special Offers Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2 class="fw-bold">Special Offers</h2>
+                <p class="text-muted">Don't miss out on these amazing deals!</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-percentage text-success fa-3x mb-3"></i>
+                        <h5 class="fw-bold">20% Off</h5>
+                        <p class="text-muted">On orders above ₹500</p>
+                        <span class="badge bg-success">SAVE20</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-shipping-fast text-primary fa-3x mb-3"></i>
+                        <h5 class="fw-bold">Free Delivery</h5>
+                        <p class="text-muted">On orders above ₹300</p>
+                        <span class="badge bg-primary">FREE300</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-gift text-warning fa-3x mb-3"></i>
+                        <h5 class="fw-bold">Buy 2 Get 1</h5>
+                        <p class="text-muted">On selected items</p>
+                        <span class="badge bg-warning text-dark">COMBO3</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Cart Summary (Fixed Bottom) -->
+<div class="fixed-bottom bg-white border-top p-3 d-none" id="cartSummary">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-shopping-cart text-primary me-2"></i>
+                    <span class="fw-bold">Cart: </span>
+                    <span class="ms-2" id="cartItemCount">0 items</span>
+                    <span class="ms-2">| Total: ₹<span id="cartTotal">0</span></span>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-primary" id="viewCartBtn">
+                    <i class="fas fa-eye me-1"></i>View Cart
+                </button>
+                <button class="btn btn-success ms-2" id="checkoutBtn">
+                    <i class="fas fa-credit-card me-1"></i>Checkout
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Filter functionality
+    document.addEventListener('DOMContentLoaded', function () {
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const menuItems = document.querySelectorAll('.menu-item');
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const noResults = document.getElementById('noResults');
+
+        // Filter by category
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                const filter = this.dataset.filter;
+
+                // Update active button
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+
+                // Filter items
+                filterItems(filter, searchInput.value);
+            });
+        });
+
+        // Search functionality
+        searchInput.addEventListener('input', function () {
+            const activeFilter = document.querySelector('.filter-btn.active').dataset.filter;
+            filterItems(activeFilter, this.value);
+        });
+
+        searchBtn.addEventListener('click', function () {
+            const activeFilter = document.querySelector('.filter-btn.active').dataset.filter;
+            filterItems(activeFilter, searchInput.value);
+        });
+
+        function filterItems(category, searchTerm) {
+            let visibleItems = 0;
+
+            menuItems.forEach(item => {
+                const itemCategory = item.dataset.category;
+                const itemName = item.querySelector('.card-title').textContent.toLowerCase();
+                const itemDescription = item.querySelector('.card-text').textContent.toLowerCase();
+
+                const matchesCategory = category === 'all' || itemCategory === category;
+                const matchesSearch = searchTerm === '' ||
+                    itemName.includes(searchTerm.toLowerCase()) ||
+                    itemDescription.includes(searchTerm.toLowerCase());
+
+                if (matchesCategory && matchesSearch) {
+                    item.style.display = 'block';
+                    visibleItems++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Show/hide no results message
+            if (visibleItems === 0) {
+                noResults.classList.remove('d-none');
+            } else {
+                noResults.classList.add('d-none');
+            }
+        }
+
+        // Quantity controls
+        const quantityButtons = document.querySelectorAll('.quantity-btn');
+        quantityButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                const action = this.dataset.action;
+                const itemId = this.dataset.itemId;
+                const quantityDisplay = document.getElementById(`quantity-${itemId}`);
+                let quantity = parseInt(quantityDisplay.textContent);
+
+                if (action === 'increase') {
+                    quantity++;
+                } else if (action === 'decrease' && quantity > 1) {
+                    quantity--;
+                }
+
+                quantityDisplay.textContent = quantity;
+            });
+        });
+
+        // Add to cart functionality
+        let cart = [];
+        const cartSummary = document.getElementById('cartSummary');
+        const cartItemCount = document.getElementById('cartItemCount');
+        const cartTotal = document.getElementById('cartTotal');
+
+        document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+            button.addEventListener('click', function () {
+                const itemId = this.dataset.itemId;
+                const quantity = parseInt(document.getElementById(`quantity-${itemId}`).textContent);
+                const itemCard = this.closest('.menu-item');
+                const itemName = itemCard.querySelector('.card-title').textContent;
+                const itemPrice = parseFloat(itemCard.querySelector('.badge.bg-success').textContent.replace('₹', ''));
+
+                // Add to cart
+                const existingItem = cart.find(item => item.id === itemId);
+                if (existingItem) {
+                    existingItem.quantity += quantity;
+                } else {
+                    cart.push({
+                        id: itemId,
+                        name: itemName,
+                        price: itemPrice,
+                        quantity: quantity
+                    });
+                }
+
+                updateCartSummary();
+
+                // Show success message
+                this.innerHTML = '<i class="fas fa-check me-1"></i>Added';
+                this.classList.remove('btn-primary');
+                this.classList.add('btn-success');
+
+                setTimeout(() => {
+                    this.innerHTML = '<i class="fas fa-cart-plus me-1"></i>Add to Cart';
+                    this.classList.remove('btn-success');
+                    this.classList.add('btn-primary');
+                }, 2000);
+            });
+        });
+
+        function updateCartSummary() {
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            cartItemCount.textContent = `${totalItems} item${totalItems !== 1 ? 's' : ''}`;
+            cartTotal.textContent = totalPrice.toFixed(2);
+
+            if (totalItems > 0) {
+                cartSummary.classList.remove('d-none');
+            } else {
+                cartSummary.classList.add('d-none');
+            }
+        }
+
+        // Cart buttons
+        document.getElementById('viewCartBtn').addEventListener('click', function () {
+            alert('View Cart functionality to be implemented');
+        });
+
+        document.getElementById('checkoutBtn').addEventListener('click', function () {
+            alert('Checkout functionality to be implemented');
+        });
     });
-  </script>
-  
+</script>
 
-{% endblock main %}
+<style>
+    .menu-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
 
+    .menu-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .filter-btn.active {
+        background-color: var(--bs-primary);
+        color: white;
+    }
+
+    .quantity-control {
+        display: flex;
+        align-items: center;
+    }
+
+    .quantity-display {
+        min-width: 30px;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 100px 0;
+    }
+
+    .animate-fadeInUp {
+        animation: fadeInUp 1s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    #cartSummary {
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    @media (max-width: 768px) {
+        .hero-section {
+            padding: 60px 0;
+        }
+
+        .hero-section h1 {
+            font-size: 2.5rem;
+        }
+
+        #cartSummary .row {
+            flex-direction: column;
+        }
+
+        #cartSummary .col-md-4 {
+            margin-top: 10px;
+        }
+    }
+</style>
+
+{% endblock %}
