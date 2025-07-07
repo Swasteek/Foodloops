@@ -3,202 +3,446 @@ from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
-from django.contrib.auth import authenticate, login
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.views import LoginView as AuthLoginView
-from Base_App.models import BookTable, AboutUs, Feedback, ItemList, Items, Cart
-from django.contrib.auth import logout
+from django.contrib.auth.decorators import login_required
 from django.urls import reverse_lazy
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
+from Base_App.models import BookTable, AboutUs, Feedback, ItemList, Items, Cart
 
 
+@never_cache
 def add_to_cart(request):
-    if request.method == 'POST' and request.user.is_authenticated:
+    """Add item to cart - handles both session and database cart"""
+    if request.method == 'POST':
         item_id = request.POST.get('item_id')
-        item = get_object_or_404(Items, id=item_id)
 
-        print(f'Item ID: {item_id}')  # Debug print
-        print(f'Item: {item.Item_name}, Price: {item.Price}')  # Debug print
+        if not item_id:
+            return JsonResponse({'error': 'Item ID is required'}, status=400)
 
-        # Retrieve or initialize the cart from the session
-        cart = request.session.get('cart', {})
-        print(f'Cart before update: {cart}')  # Debug print
+        try:
+            item = get_object_or_404(Items, id=item_id)
+        except:
+            return JsonResponse({'error': 'Item not found'}, status=404)
 
-        # Update the cart
-        if item_id in cart:
-            cart[item_id]['quantity'] += 1
+        if request.user.is_authenticated:
+            # For authenticated users, use database cart
+            cart_item, created = Cart.objects.get_or_create(
+                user=request.user,
+                item=item,
+                defaults={'quantity': 1}
+            )
+
+            if not created:
+                cart_item.quantity += 1
+                cart_item.save()
+
+            return JsonResponse({
+                'message': 'Item added to cart',
+                'quantity': cart_item.quantity
+            })
         else:
-            cart[item_id] = {
-                'name': item.Item_name,
-                'price': item.Price,
-                'quantity': 1
-            }
+            # For anonymous users, use session cart
+            cart = request.session.get('cart', {})
 
-        request.session['cart'] = cart
-        print(f'Cart after update: {cart}')  # Debug print
+            if item_id in cart:
+                cart[item_id]['quantity'] += 1
+            else:
+                cart[item_id] = {
+                    'name': item.Item_name,
+                    'price': float(item.Price),
+                    'quantity': 1
+                }
 
-        return JsonResponse({'message': 'Item added to cart', 'cart': cart})
-    else:
-        print('Invalid request')  # Debug print
-        return JsonResponse({'error': 'Invalid request'}, status=400)
+            request.session['cart'] = cart
+            request.session.modified = True
+
+            return JsonResponse({
+                'message': 'Item added to cart',
+                'cart': cart
+            })
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 
 def get_cart_items(request):
+    """Get cart items for current user"""
     if request.user.is_authenticated:
         cart_items = Cart.objects.filter(
             user=request.user).select_related('item')
-        items = [
-            {
+        items = []
+        total_amount = 0
+
+        for cart_item in cart_items:
+            item_total = cart_item.quantity * cart_item.item.Price
+            total_amount += item_total
+            items.append({
+                'id': cart_item.item.id,
                 'name': cart_item.item.Item_name,
                 'quantity': cart_item.quantity,
-                'price': cart_item.item.Price,
-                'total': cart_item.quantity * cart_item.item.Price,
-            }
-            for cart_item in cart_items
-        ]
-        return JsonResponse({'items': items}, safe=False)
-    return JsonResponse({'error': 'User not authenticated'}, status=401)
+                'price': float(cart_item.item.Price),
+                'total': float(item_total),
+            })
+
+        return JsonResponse({
+            'items': items,
+            'total_amount': float(total_amount),
+            'item_count': len(items)
+        })
+    else:
+        # Return session cart for anonymous users
+        cart = request.session.get('cart', {})
+        items = []
+        total_amount = 0
+
+        for item_id, item_data in cart.items():
+            item_total = item_data['quantity'] * item_data['price']
+            total_amount += item_total
+            items.append({
+                'id': item_id,
+                'name': item_data['name'],
+                'quantity': item_data['quantity'],
+                'price': item_data['price'],
+                'total': item_total,
+            })
+
+        return JsonResponse({
+            'items': items,
+            'total_amount': total_amount,
+            'item_count': len(items)
+        })
 
 
-# class LoginView(AuthLoginView):
-#     template_name = 'login.html'
-
+class LoginView(AuthLoginView):
+    """Custom login view with proper error handling"""
+    template_name = 'login.html'
+    form_class = AuthenticationForm
+    redirect_authenticated_user = True
 
     def get_success_url(self):
+        # Check if there's a 'next' parameter
+        next_url = self.request.GET.get('next')
+        if next_url:
+            return next_url
+
         # Check if the user is an admin
         if self.request.user.is_staff:
-            # Redirects to the Django admin panel
             return reverse_lazy('admin:index')
-        # Redirects to the home page if not an admin
+
+        # Default redirect to home
         return reverse_lazy('Home')
 
+    def form_valid(self, form):
+        """Handle successful login"""
+        user = form.get_user()
 
-def login_view(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
+        # Transfer session cart to user cart if exists
+        if hasattr(self.request, 'session') and 'cart' in self.request.session:
+            session_cart = self.request.session['cart']
+            for item_id, item_data in session_cart.items():
+                try:
+                    item = Items.objects.get(id=item_id)
+                    cart_item, created = Cart.objects.get_or_create(
+                        user=user,
+                        item=item,
+                        defaults={'quantity': item_data['quantity']}
+                    )
+                    if not created:
+                        cart_item.quantity += item_data['quantity']
+                        cart_item.save()
+                except Items.DoesNotExist:
+                    continue
 
-        if user is not None:
-            login(request, user)
-            if user.is_staff:
-                return redirect('admin:index')
-            return redirect('Home')
-        else:
-            messages.error(request, 'Invalid username or password.')
-            return render(request, 'login.html', {'error': 'Invalid username or password.'})
+            # Clear session cart
+            del self.request.session['cart']
 
-    return render(request, 'login.html')
+        messages.success(self.request, f'Welcome back, {user.username}!')
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        """Handle failed login"""
+        messages.error(
+            self.request, 'Invalid username or password. Please try again.')
+        return super().form_invalid(form)
 
 
+@never_cache
 def LogoutView(request):
-    logout(request)
-    messages.success(request, 'You have been logged out successfully.')
-    # Redirect to a page after logout, e.g., the home page
+    """Handle user logout"""
+    if request.user.is_authenticated:
+        username = request.user.username
+        logout(request)
+        messages.success(
+            request, f'Goodbye, {username}! You have been logged out successfully.')
     return redirect('Home')
 
 
 def SignupView(request):
+    """Handle user registration"""
+    if request.user.is_authenticated:
+        return redirect('Home')
+
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)
-            messages.success(request, f'Welcome, {user.username}!')
-            return redirect('Home')
+
+            # Log the user in immediately after signup
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password1')
+            user = authenticate(username=username, password=password)
+
+            if user:
+                login(request, user)
+                messages.success(
+                    request, f'Welcome to FoodLoops, {username}! Your account has been created successfully.')
+                return redirect('Home')
         else:
-            messages.error(request, 'Error during signup. Please try again.')
+            # Add form errors to messages
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
     else:
         form = UserCreationForm()
-    return render(request, 'login.html', {'form': form, 'tab': 'signup'})
+
+    return render(request, 'register.html', {'form': form})
 
 
 def HomeView(request):
-    items = Items.objects.all()
-    list = ItemList.objects.all()
-    review = Feedback.objects.all().order_by('-id')[:5]
-    return render(request, 'home.html', {'items': items, 'list': list, 'review': review})
+    """Home page view with items and reviews"""
+    try:
+        items = Items.objects.select_related('Category').all()
+        categories = ItemList.objects.all()
+        reviews = Feedback.objects.all().order_by('-id')[:5]
+
+        context = {
+            'items': items,
+            'categories': categories,
+            'reviews': reviews
+        }
+
+        # Add cart count for authenticated users
+        if request.user.is_authenticated:
+            cart_count = Cart.objects.filter(user=request.user).count()
+            context['cart_count'] = cart_count
+
+        return render(request, 'home.html', context)
+    except Exception as e:
+        messages.error(request, 'An error occurred while loading the page.')
+        return render(request, 'home.html', {'items': [], 'categories': [], 'reviews': []})
 
 
 def AboutView(request):
-    data = AboutUs.objects.all()
-    return render(request, 'about.html', {'data': data})
+    """About page view"""
+    try:
+        about_data = AboutUs.objects.all()
+        return render(request, 'about.html', {'data': about_data})
+    except Exception as e:
+        messages.error(
+            request, 'An error occurred while loading the about page.')
+        return render(request, 'about.html', {'data': []})
 
 
 def MenuView(request):
-    items = Items.objects.all()
-    list = ItemList.objects.all()
-    return render(request, 'menu.html', {'items': items, 'list': list})
+    """Menu page view"""
+    try:
+        items = Items.objects.select_related('Category').all()
+        categories = ItemList.objects.all()
+
+        context = {
+            'items': items,
+            'categories': categories
+        }
+
+        return render(request, 'menu.html', context)
+    except Exception as e:
+        messages.error(request, 'An error occurred while loading the menu.')
+        return render(request, 'menu.html', {'items': [], 'categories': []})
 
 
 def BookTableView(request):
-    # Pass the API key to the template
-    google_maps_api_key = settings.GOOGLE_MAPS_API_KEY
+    """Book table view with form handling"""
+    google_maps_api_key = getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
 
     if request.method == 'POST':
-        name = request.POST.get('user_name')
-        phone_number = request.POST.get('phone_number')
-        email = request.POST.get('user_email')
-        total_person = request.POST.get('total_person')
-        booking_data = request.POST.get('booking_data')
+        name = request.POST.get('user_name', '').strip()
+        phone_number = request.POST.get('phone_number', '').strip()
+        email = request.POST.get('user_email', '').strip()
+        total_person = request.POST.get('total_person', '').strip()
+        booking_date = request.POST.get('booking_data', '').strip()
 
-        # Validate the form data
-        if name != '' and len(phone_number) == 10 and email != '' and total_person != '0' and booking_data != '':
-            # Save the booking data to the database
-            data = BookTable(Name=name, Phone_number=phone_number,
-                             Email=email, Total_person=total_person,
-                             Booking_date=booking_data)
-            data.save()
+        # Validation
+        errors = []
+
+        if not name:
+            errors.append('Name is required.')
+
+        if not phone_number or len(phone_number) != 10 or not phone_number.isdigit():
+            errors.append('Please enter a valid 10-digit phone number.')
+
+        if not email:
+            errors.append('Email is required.')
+
+        if not total_person or total_person == '0':
+            errors.append('Please select number of persons.')
+
+        if not booking_date:
+            errors.append('Booking date is required.')
+
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return render(request, 'book_table.html', {'google_maps_api_key': google_maps_api_key})
+
+        try:
+            # Save booking
+            booking = BookTable(
+                Name=name,
+                Phone_number=int(phone_number),
+                Email=email,
+                Total_person=int(total_person),
+                Booking_date=booking_date
+            )
+            booking.save()
 
             # Send confirmation email
-            subject = 'Booking Confirmation'
-            message = f"Hello {name},\n\nYour booking has been successfully received.\n" \
-                f"Booking details:\nTotal persons: {total_person}\n" \
-                f"Booking date: {booking_data}\n\nThank you for choosing us!"
+            try:
+                subject = 'Booking Confirmation - FoodLoops'
+                message = f"""Hello {name},
 
-            from_email = settings.DEFAULT_FROM_EMAIL
-            recipient_list = [email]  # The email of the user
+Your table booking has been successfully received!
 
-            # Send the confirmation email
-            send_mail(subject, message, from_email, recipient_list)
+Booking Details:
+- Name: {name}
+- Phone: {phone_number}
+- Email: {email}
+- Number of Persons: {total_person}
+- Booking Date: {booking_date}
 
-            # Add success message
+We will contact you shortly to confirm your reservation.
+
+Thank you for choosing FoodLoops!
+
+Best regards,
+FoodLoops Team"""
+
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [email],
+                    fail_silently=False,
+                )
+            except Exception as e:
+                # Email failed, but booking was saved
+                messages.warning(
+                    request, 'Booking saved but confirmation email could not be sent.')
+
             messages.success(
-                request, 'Booking request submitted successfully! Please check your confirmation email.')
+                request, 'Booking request submitted successfully! We will contact you shortly.')
+            return redirect('book_table')
 
-            # Redirect or render a feedback page with success message
-            return render(request, 'feedback.html', {'success': 'Booking request submitted successfully! Please check your confirmation email.'})
+        except Exception as e:
+            messages.error(
+                request, 'An error occurred while processing your booking. Please try again.')
 
-    # Render the book_table.html template and pass the API key to it
     return render(request, 'book_table.html', {'google_maps_api_key': google_maps_api_key})
 
 
 def FeedbackView(request):
+    """Feedback submission view"""
     if request.method == 'POST':
-        # Get data from the form
-        name = request.POST.get('User_name')
-        # Assuming 'Feedback' field is a description
-        feedback = request.POST.get('Description')
-        rating = request.POST.get('Rating')
-        image = request.FILES.get('Selfie')  # 'Selfie' field from the form
+        name = request.POST.get('User_name', '').strip()
+        feedback_text = request.POST.get('Description', '').strip()
+        rating = request.POST.get('Rating', '').strip()
+        image = request.FILES.get('Selfie')
 
-        # Print to check the values
-        print('-->', name, feedback, rating, image)
+        # Validation
+        errors = []
 
-        # Check if the name is provided
-        if name != '':
-            # Save the feedback data to the Feedback model
-            feedback_data = Feedback(
+        if not name:
+            errors.append('Name is required.')
+        elif len(name) < 2:
+            errors.append('Name must be at least 2 characters long.')
+
+        if not feedback_text:
+            errors.append('Feedback description is required.')
+        elif len(feedback_text) < 10:
+            errors.append(
+                'Feedback description must be at least 10 characters long.')
+
+        if not rating:
+            errors.append('Please select a rating.')
+        elif rating not in ['1', '2', '3', '4', '5']:
+            errors.append('Please select a valid rating.')
+
+        # Validate image if uploaded
+        if image:
+            # Check file size (5MB limit)
+            if image.size > 5 * 1024 * 1024:
+                errors.append('Image file size must be less than 5MB.')
+
+            # Check file type
+            allowed_types = ['image/jpeg',
+                             'image/jpg', 'image/png', 'image/gif']
+            if image.content_type not in allowed_types:
+                errors.append(
+                    'Please upload a valid image file (JPEG, PNG, or GIF).')
+
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return render(request, 'feedback.html')
+
+        try:
+            # Save feedback
+            feedback = Feedback(
                 User_name=name,
-                Description=feedback,
-                Rating=rating,
-                Image=image  # Save the uploaded image
+                Description=feedback_text,
+                Rating=int(rating),
+                Image=image
             )
-            feedback_data.save()
+            feedback.save()
 
-            # Add success message
-            messages.success(request, 'Feedback submitted successfully!')
+            # Send notification email to admin (optional)
+            try:
+                from django.core.mail import send_mail
+                from django.conf import settings
 
-            # Optionally, you can redirect or return a success message
-            return render(request, 'feedback.html', {'success': 'Feedback submitted successfully!'})
+                subject = f'New Feedback Received - Rating: {rating}/5'
+                message = f"""New feedback received:
+
+Name: {name}
+Rating: {rating}/5
+Feedback: {feedback_text}
+
+Please check the admin panel for more details."""
+
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [settings.DEFAULT_FROM_EMAIL],  # Send to admin
+                    fail_silently=True,
+                )
+            except Exception as e:
+                # Email failed, but feedback was saved
+                pass
+
+            messages.success(
+                request, 'Thank you for your feedback! We appreciate your input.')
+            return redirect('feedback')
+
+        except Exception as e:
+            messages.error(
+                request, 'An error occurred while submitting your feedback. Please try again.')
+
+            # Log the error for debugging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f'Error saving feedback: {str(e)}')
 
     return render(request, 'feedback.html')

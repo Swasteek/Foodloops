@@ -19,17 +19,25 @@
     </div>
 </section>
 
-<!-- Success Message -->
-{% if success %}
-<section class="py-4">
+<!-- Display Messages -->
+{% if messages %}
+<section class="py-3">
     <div class="container">
         <div class="row">
             <div class="col-lg-8 mx-auto">
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {% if message.tags == 'success' %}
                     <i class="fas fa-check-circle me-2"></i>
-                    <strong>Thank you!</strong> {{ success }}
+                    {% elif message.tags == 'error' %}
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    {% else %}
+                    <i class="fas fa-info-circle me-2"></i>
+                    {% endif %}
+                    {{ message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
+                {% endfor %}
             </div>
         </div>
     </div>
@@ -48,106 +56,47 @@
                     <div class="card-body p-5">
                         <form method="POST" enctype="multipart/form-data" id="feedbackForm">
                             {% csrf_token %}
-                            <div class="row">
-                                <div class="col-md-6 mb-4">
-                                    <label for="User_name" class="form-label">
-                                        <i class="fas fa-user me-2"></i>Your Name *
-                                    </label>
-                                    <input type="text" class="form-control" id="User_name" name="User_name"
-                                        placeholder="Enter your full name" required>
-                                </div>
-                                <div class="col-md-6 mb-4">
-                                    <label for="email" class="form-label">
-                                        <i class="fas fa-envelope me-2"></i>Email Address *
-                                    </label>
-                                    <input type="email" class="form-control" id="email" name="email"
-                                        placeholder="your.email@example.com" required>
-                                </div>
-                            </div>
 
-                            <div class="row">
-                                <div class="col-md-6 mb-4">
-                                    <label for="phone" class="form-label">
-                                        <i class="fas fa-phone me-2"></i>Phone Number
-                                    </label>
-                                    <input type="tel" class="form-control" id="phone" name="phone"
-                                        placeholder="+91 12345 67890">
-                                </div>
-                                <div class="col-md-6 mb-4">
-                                    <label for="rating" class="form-label">
-                                        <i class="fas fa-star me-2"></i>Overall Rating *
-                                    </label>
-                                    <select class="form-select" id="rating" name="rating" required>
-                                        <option value="">Select Rating</option>
-                                        <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
-                                        <option value="4">⭐⭐⭐⭐☆ Very Good</option>
-                                        <option value="3">⭐⭐⭐☆☆ Good</option>
-                                        <option value="2">⭐⭐☆☆☆ Fair</option>
-                                        <option value="1">⭐☆☆☆☆ Poor</option>
-                                    </select>
-                                </div>
+                            <div class="mb-4">
+                                <label for="User_name" class="form-label">
+                                    <i class="fas fa-user me-2"></i>Your Name *
+                                </label>
+                                <input type="text" class="form-control" id="User_name" name="User_name"
+                                    placeholder="Enter your full name" required>
                             </div>
 
                             <div class="mb-4">
-                                <label for="category" class="form-label">
-                                    <i class="fas fa-tag me-2"></i>Feedback Category *
+                                <label for="Rating" class="form-label">
+                                    <i class="fas fa-star me-2"></i>Overall Rating *
                                 </label>
-                                <select class="form-select" id="category" name="category" required>
-                                    <option value="">Select Category</option>
-                                    <option value="food_quality">Food Quality</option>
-                                    <option value="service">Service</option>
-                                    <option value="delivery">Delivery</option>
-                                    <option value="website">Website Experience</option>
-                                    <option value="payment">Payment Process</option>
-                                    <option value="other">Other</option>
+                                <select class="form-select" id="Rating" name="Rating" required>
+                                    <option value="">Select Rating</option>
+                                    <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+                                    <option value="4">⭐⭐⭐⭐☆ Very Good</option>
+                                    <option value="3">⭐⭐⭐☆☆ Good</option>
+                                    <option value="2">⭐⭐☆☆☆ Fair</option>
+                                    <option value="1">⭐☆☆☆☆ Poor</option>
                                 </select>
                             </div>
 
                             <div class="mb-4">
-                                <label for="subject" class="form-label">
-                                    <i class="fas fa-bookmark me-2"></i>Subject *
-                                </label>
-                                <input type="text" class="form-control" id="subject" name="subject"
-                                    placeholder="Brief subject line" required>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="message" class="form-label">
+                                <label for="Description" class="form-label">
                                     <i class="fas fa-comment me-2"></i>Your Feedback *
                                 </label>
-                                <textarea class="form-control" id="message" name="message" rows="6"
+                                <textarea class="form-control" id="Description" name="Description" rows="6"
                                     placeholder="Please share your detailed feedback..." required></textarea>
                                 <div class="form-text">
-                                    Minimum 10 characters required
+                                    Please provide detailed feedback about your experience
                                 </div>
                             </div>
 
                             <div class="mb-4">
-                                <label for="image" class="form-label">
+                                <label for="Selfie" class="form-label">
                                     <i class="fas fa-image me-2"></i>Attach Image (Optional)
                                 </label>
-                                <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                                <input type="file" class="form-control" id="Selfie" name="Selfie" accept="image/*">
                                 <div class="form-text">
                                     Upload an image if relevant to your feedback (Max 5MB)
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="newsletter" name="newsletter">
-                                    <label class="form-check-label" for="newsletter">
-                                        Subscribe to our newsletter for updates and special offers
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
-                                    <label class="form-check-label" for="terms">
-                                        I agree to the <a href="#" class="text-primary">Terms of Service</a> and
-                                        <a href="#" class="text-primary">Privacy Policy</a> *
-                                    </label>
                                 </div>
                             </div>
 
@@ -257,24 +206,105 @@
     </div>
 </section>
 
+<style>
+    /* Form validation styles */
+    .is-invalid {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+    }
+
+    .is-invalid:focus {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+    }
+
+    /* Form field focus improvements */
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+
+    /* Success state for valid fields */
+    .is-valid {
+        border-color: #198754 !important;
+        box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25) !important;
+    }
+</style>
+
 <script>
     document.getElementById('feedbackForm').addEventListener('submit', function (e) {
-        const message = document.getElementById('message').value;
-        if (message.length < 10) {
-            e.preventDefault();
-            alert('Please provide at least 10 characters in your feedback message.');
-            return false;
-        }
+        let isValid = true;
 
-        const fileInput = document.getElementById('image');
+        // Clear previous validation states
+        document.querySelectorAll('.is-invalid').forEach(field => {
+            field.classList.remove('is-invalid');
+        });
+
+        // Check required fields
+        const requiredFields = [
+            { id: 'User_name', name: 'Name' },
+            { id: 'Rating', name: 'Rating' },
+            { id: 'Description', name: 'Feedback description' }
+        ];
+
+        requiredFields.forEach(field => {
+            const element = document.getElementById(field.id);
+            if (!element.value.trim()) {
+                isValid = false;
+                element.classList.add('is-invalid');
+            } else {
+                element.classList.remove('is-invalid');
+            }
+        });
+
+        // Check file size if file is uploaded
+        const fileInput = document.getElementById('Selfie');
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
             if (file.size > 5 * 1024 * 1024) { // 5MB
-                e.preventDefault();
+                isValid = false;
+                fileInput.classList.add('is-invalid');
                 alert('File size must be less than 5MB');
-                return false;
             }
         }
+
+        // If validation fails, prevent submission
+        if (!isValid) {
+            e.preventDefault();
+            // Scroll to first invalid field
+            const firstInvalid = document.querySelector('.is-invalid');
+            if (firstInvalid) {
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstInvalid.focus();
+            }
+            return false;
+        }
+    });
+
+    // Add real-time validation feedback
+    document.addEventListener('DOMContentLoaded', function () {
+        const requiredFields = ['User_name', 'Rating', 'Description'];
+
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('blur', function () {
+                    if (this.value.trim()) {
+                        this.classList.remove('is-invalid');
+                        this.classList.add('is-valid');
+                    } else {
+                        this.classList.remove('is-valid');
+                    }
+                });
+
+                field.addEventListener('input', function () {
+                    if (this.value.trim()) {
+                        this.classList.remove('is-invalid');
+                    }
+                });
+            }
+        });
     });
 </script>
 
